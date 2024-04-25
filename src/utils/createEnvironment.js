@@ -10,8 +10,8 @@ const createEnvironment = (scene) => {
     task.texture.rotationY = Tools.ToRadians(270);
     scene.environmentTexture = task.texture;    
     new DirectionalLight("DirectionalLight", new Vector3(0.25, -1, -1), scene);   
-    new HemisphericLight("HemisphericLight", new Vector3(0.5, -1, 1), scene);    
-    new HemisphericLight("HemisphericLight", new Vector3(0, 0, -1), scene);
+    // new HemisphericLight("HemisphericLight", new Vector3(0.5, -1, 1), scene);    
+    // new HemisphericLight("HemisphericLight", new Vector3(0, 0, -1), scene);
   };
 };
 

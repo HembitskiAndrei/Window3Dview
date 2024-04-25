@@ -21,21 +21,22 @@ const windowGlass = (options, scene) => {
   glass.microSurface = 1;
   glass.subSurface.isRefractionEnabled = true;
 
-const {
-    width,
-    height,
-    depth
-} = options;
+  const {
+      glassWidth,
+      glassHeight,
+      glassDepth,
+      glassOffset
+  } = options;
 
   const glassPlane = MeshBuilder.CreateBox("glass", {
-    width,
-    height,
-    depth,
+    width: glassWidth + glassOffset.x * 2,
+    height: glassHeight + glassOffset.y * 2,
+    depth: glassDepth,
     sideOrientation: Mesh.DOUBLESIDE
   });
   glassPlane.material = glass;  
   glassPlane.parent = nodeWindowGlass;
-  glassPlane.position.z += depth + 10
+  glassPlane.position.z += glassOffset.z;
 
 //   nodeWindowGlass.rotate(Axis.Y, Math.PI, Space.WORLD);
 

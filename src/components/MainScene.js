@@ -16,45 +16,25 @@ import {Texture} from "@babylonjs/core/Materials/Textures/texture";
 import {AssetsManager} from "@babylonjs/core/Misc/assetsManager";
 import {Axis, Space} from "@babylonjs/core/Maths/math.axis";
 import {MeshBuilder} from "@babylonjs/core/Meshes/meshBuilder";
+import {PolygonMeshBuilder} from "@babylonjs/core/Meshes/polygonMesh";
 import {Layer} from "@babylonjs/core/Layers/layer";
 import "@babylonjs/core/Misc/screenshotTools";
 import {Tools} from "@babylonjs/core/Misc/tools";
+import earcut from "earcut";
 import createEnvironment from "../utils/createEnvironment";
-import pickMaterial from "../utils/pickMaterial";
 import windowFrame from "../utils/windowFrame";
 import windowGlass from "../utils/windowGlass";
-import canvasMaker from "../utils/canvasMaker";
-import createBracing from "../utils/createBracing";
-import Camera from "../camera";
-import settingsRopeTextures from "../utils/settingsRopeTextures";
-import setBabylonProfile from "../utils/setBabylonProfile";
-import curvedFrameProfile from "../utils/curvedFrameProfile";
-import createAcrylicBracing from "../utils/createAcrylicBracing";
-import createCoasters from "../utils/createCoasters";
-import addHoles from "../utils/addHoles";
-import setEdgeTextureScale from "../utils/setEdgeTextureScale";
-import {compositeGatorFoamHanger, compositeWoodHanger} from "../utils/compositeGatorFoamHanger";
-import checkStandout from "../utils/checkStandout";
-import getHanger from "../utils/getHanger";
-import createHanger from "../utils/createHanger";
-import acrylicHanger from "../utils/acrylicHanger";
-import xposerHanger from "../utils/xposerHanger";
-import greetingCard from "../utils/greetingCard";
-import textToTexture from "../utils/textToTexture";
-import addLogoToGreetingCard from "../utils/addLogoToGreetingCard";
-import blackDotsForBackSkeleton from "../utils/blackDotsForBackSkeleton";
-import getRestrictiveSize from "../utils/getRestrictiveSize";
 import { ASSETS_URL } from "../utils/constants";
+import Camera from "../camera";
+import { vec3ToVec2 } from "../utils/vec3ToVec2";
+import { holesForSlice } from "../utils/holesForSlice";
 
 export default class MainScene extends Scene {
     constructor(windowConfig, engine, canvas, options) {
         super(engine, options);
         this.sceneConfig = {    
             width: 1,
-            height: 1,
-            glassWidth: 1,
-            glassHeight: 1,
-            glassThickness: 0.1,
+            height: 1,           
             path: [
                 new Vector3(-1, -1, 0),
                 new Vector3(1, -1, 0),
@@ -91,13 +71,15 @@ export default class MainScene extends Scene {
         // this.clipPlane = new Plane(1, 0, 0, 0);
         // this.clipPlane2 = new Plane(0, 1, 0, 0);
        
-        const {
-            glassWidth, 
-            glassHeight,
-            glassThickness,           
+        const {                    
             path,
-            profiles            
-        } = this.sceneConfig;        
+            profiles,
+            width,
+            height        
+        } = this.sceneConfig;  
+        
+        const widthHalf = width * 0.5;
+        const heightHalf = height * 0.5;
         
         // middle point
         let sumX = 0;
@@ -148,6 +130,7 @@ export default class MainScene extends Scene {
                     console.log("=================================================")
                  }
                  const totalVector1 = rightVectorNormalScaled.add(leftVectorNormalScaled);
+
                 //  const totalVector = leftVectorOrt.add(rightVectorOrt);
                 //  const normalizedTotalVector2 = new Vector2(totalVector.x, totalVector.y).normalize();
                 //  const offsetLength = new Vector2(offset.x, offset.y).length();   
@@ -158,83 +141,82 @@ export default class MainScene extends Scene {
                  const endPoint = longTotalVector1.add(p);          
               
                 // console.log(cLength, endPoint)
-                 if (i === 3) {                    
-                    const currentPointMesh = MeshBuilder.CreateSphere("currentPointMesh", {diameter: 0.25});
-                    currentPointMesh.position.x = p.x;
-                    currentPointMesh.position.y = p.y;
-                    currentPointMesh.position.z += 1;
-                    const currentPointMeshMaterial = new PBRMaterial("currentPointMeshMaterial", this);
-                    currentPointMeshMaterial.metallic = 0;         
-                    currentPointMeshMaterial.albedoColor = Color3.Purple();               
-                    currentPointMesh.material = currentPointMeshMaterial;  
+                //  if (i === 3) {                    
+                //     const currentPointMesh = MeshBuilder.CreateSphere("currentPointMesh", {diameter: 0.25});
+                //     currentPointMesh.position.x = p.x;
+                //     currentPointMesh.position.y = p.y;
+                //     currentPointMesh.position.z += 1;
+                //     const currentPointMeshMaterial = new PBRMaterial("currentPointMeshMaterial", this);
+                //     currentPointMeshMaterial.metallic = 0;         
+                //     currentPointMeshMaterial.albedoColor = Color3.Purple();               
+                //     currentPointMesh.material = currentPointMeshMaterial;  
 
-                    const nextPointMesh = MeshBuilder.CreateSphere("nextPointMesh", {diameter: 0.25});
-                    nextPointMesh.position.x = nextPoint.x;
-                    nextPointMesh.position.y = nextPoint.y;
-                    nextPointMesh.position.z += 0.9;
-                    const nextPointMeshMaterial = new PBRMaterial("nextPointMeshMaterial", this);
-                    nextPointMeshMaterial.metallic = 0;         
-                    nextPointMeshMaterial.albedoColor = Color3.Green();               
-                    nextPointMesh.material = nextPointMeshMaterial;  
+                //     const nextPointMesh = MeshBuilder.CreateSphere("nextPointMesh", {diameter: 0.25});
+                //     nextPointMesh.position.x = nextPoint.x;
+                //     nextPointMesh.position.y = nextPoint.y;
+                //     nextPointMesh.position.z += 0.9;
+                //     const nextPointMeshMaterial = new PBRMaterial("nextPointMeshMaterial", this);
+                //     nextPointMeshMaterial.metallic = 0;         
+                //     nextPointMeshMaterial.albedoColor = Color3.Green();               
+                //     nextPointMesh.material = nextPointMeshMaterial;  
 
-                    const prevPointMesh = MeshBuilder.CreateSphere("prevPointMesh", {diameter: 0.25});
-                    prevPointMesh.position.x = prevPoint.x;
-                    prevPointMesh.position.y = prevPoint.y;
-                    prevPointMesh.position.z += 1.1;
-                    const prevPointMeshMaterial = new PBRMaterial("prevPointMeshMaterial", this);
-                    prevPointMeshMaterial.metallic = 0;         
-                    prevPointMeshMaterial.albedoColor = Color3.Blue();               
-                    prevPointMesh.material = prevPointMeshMaterial;  
-                }
+                //     const prevPointMesh = MeshBuilder.CreateSphere("prevPointMesh", {diameter: 0.25});
+                //     prevPointMesh.position.x = prevPoint.x;
+                //     prevPointMesh.position.y = prevPoint.y;
+                //     prevPointMesh.position.z += 1.1;
+                //     const prevPointMeshMaterial = new PBRMaterial("prevPointMeshMaterial", this);
+                //     prevPointMeshMaterial.metallic = 0;         
+                //     prevPointMeshMaterial.albedoColor = Color3.Blue();               
+                //     prevPointMesh.material = prevPointMeshMaterial;  
+                // }
 
-                if (i === 3) {                   
-                 const pointMesh = MeshBuilder.CreateSphere("pointMesh", {diameter: 0.25});
-                 pointMesh.position.x = endPoint.x;
-                 pointMesh.position.y = endPoint.y;
-                 pointMesh.position.z += 1;
-                 const pointMeshMaterial = new PBRMaterial("pointMeshMaterial", this);
-                 pointMeshMaterial.metallic = 0;         
-                 pointMeshMaterial.albedoColor = Color3.Red();               
-                 pointMesh.material = pointMeshMaterial;  
+                // if (i === 3) {                   
+                //  const pointMesh = MeshBuilder.CreateSphere("pointMesh", {diameter: 0.25});
+                //  pointMesh.position.x = endPoint.x;
+                //  pointMesh.position.y = endPoint.y;
+                //  pointMesh.position.z += 1;
+                //  const pointMeshMaterial = new PBRMaterial("pointMeshMaterial", this);
+                //  pointMeshMaterial.metallic = 0;         
+                //  pointMeshMaterial.albedoColor = Color3.Red();               
+                //  pointMesh.material = pointMeshMaterial;  
 
-                 const myColors = [
-                    new Color4(1, 0, 0, 1),
-                    new Color4(0, 1, 0, 1),
-                    new Color4(0, 0, 1, 1),
-                    new Color4(1, 1, 0, 1)
-                ]
-                const myColorsLeft = [
-                    new Color4(1, 0, 0, 1),
-                    new Color4(1, 0, 0, 1) 
-                ]
-                const myColorsRight = [
-                    new Color4(0, 0, 1, 1),
-                    new Color4(0, 0, 1, 1),               
-                ]
-                const myColorsNormal = [
-                    new Color4(0, 1, 1, 1),
-                    new Color4(0, 1, 1, 1),               
-                ]
-                const myColorsTotal = [
-                    new Color4(1, 1, 0, 1),
-                    new Color4(1, 1, 0, 1),               
-                ]
+                //  const myColors = [
+                //     new Color4(1, 0, 0, 1),
+                //     new Color4(0, 1, 0, 1),
+                //     new Color4(0, 0, 1, 1),
+                //     new Color4(1, 1, 0, 1)
+                // ]
+                // const myColorsLeft = [
+                //     new Color4(1, 0, 0, 1),
+                //     new Color4(1, 0, 0, 1) 
+                // ]
+                // const myColorsRight = [
+                //     new Color4(0, 0, 1, 1),
+                //     new Color4(0, 0, 1, 1),               
+                // ]
+                // const myColorsNormal = [
+                //     new Color4(0, 1, 1, 1),
+                //     new Color4(0, 1, 1, 1),               
+                // ]
+                // const myColorsTotal = [
+                //     new Color4(1, 1, 0, 1),
+                //     new Color4(1, 1, 0, 1),               
+                // ]
                 //  const line = MeshBuilder.CreateLines("line", {points: [new Vector3(p.x, p.y, 1), new Vector3(endPoint.x, endPoint.y, 1)], colors: myColors})
-                 const lineLeft = MeshBuilder.CreateLines("lineLeft", {points: [new Vector3(p.x, p.y, 1), new Vector3(nextPoint.x, nextPoint.y, 1)], colors: myColorsLeft})
-                 const lineLeftNormal = MeshBuilder.CreateLines("lineLeftNormal", {points: [new Vector3(p.x, p.y, 1), new Vector3(leftVectorNormalScaled.x + p.x, leftVectorNormalScaled.y + p.y, 1)], colors: myColorsNormal})
-                 const lineLeftNormal1 = MeshBuilder.CreateLines("lineLeftNormal1", {points: [new Vector3(p.x, p.y, 1), new Vector3(rightVectorNormalScaled.x + p.x, rightVectorNormalScaled.y + p.y, 1)], colors: myColorsNormal})
-                 const lineRight = MeshBuilder.CreateLines("lineRight", {points: [new Vector3(p.x, p.y, 1), new Vector3(prevPoint.x, prevPoint.y, 1)], colors: myColorsRight})
+                //  const lineLeft = MeshBuilder.CreateLines("lineLeft", {points: [new Vector3(p.x, p.y, 1), new Vector3(nextPoint.x, nextPoint.y, 1)], colors: myColorsLeft})
+                //  const lineLeftNormal = MeshBuilder.CreateLines("lineLeftNormal", {points: [new Vector3(p.x, p.y, 1), new Vector3(leftVectorNormalScaled.x + p.x, leftVectorNormalScaled.y + p.y, 1)], colors: myColorsNormal})
+                //  const lineLeftNormal1 = MeshBuilder.CreateLines("lineLeftNormal1", {points: [new Vector3(p.x, p.y, 1), new Vector3(rightVectorNormalScaled.x + p.x, rightVectorNormalScaled.y + p.y, 1)], colors: myColorsNormal})
+                //  const lineRight = MeshBuilder.CreateLines("lineRight", {points: [new Vector3(p.x, p.y, 1), new Vector3(prevPoint.x, prevPoint.y, 1)], colors: myColorsRight})
 
-                 const lineTotal = MeshBuilder.CreateLines("lineTotal", {points: [new Vector3(p.x, p.y, 1), new Vector3(endPoint.x, endPoint.y, 1)], colors: myColorsTotal})
-                }
+                //  const lineTotal = MeshBuilder.CreateLines("lineTotal", {points: [new Vector3(p.x, p.y, 1), new Vector3(endPoint.x, endPoint.y, 1)], colors: myColorsTotal})
+                // }
                  return new Vector3(endPoint.x, endPoint.y, 0);                
                 }
             );
         }
         //
 
-        profiles.forEach(p => {            
-            
+        profiles.forEach(p => {
             // new path   
             let tmpPath = path;
             if (p.offset.x !== 0) {
@@ -244,8 +226,54 @@ export default class MainScene extends Scene {
 
             const frame = windowFrame({path: tmpPath, profile: p.profile, color: p.color}, this);
             frame.nodeWindowFrame.position.z += p.offset.z;
-        })
-        // const glass = windowGlass({width: glassWidth, height: glassHeight, depth: glassThickness}, this);
+
+            frame.frame.onBeforeRenderObservable.add(() => {
+                this.clipPlane = new Plane(1, 0, 0, 0);
+            });
+        
+            frame.frame.onAfterRenderObservable.add(() => {
+                this.clipPlane = null;
+            });
+           
+            const polySlice = new PolygonMeshBuilder("polySlice", vec3ToVec2(p.profile), this, earcut);          
+            p.holes.forEach(hole => {
+                let tmpHolePath = path;
+                if (hole.offset.x !== 0) {
+                    tmpHolePath = calculateScale(hole.offset, path);
+                }
+            
+                const holeFrame = windowFrame({path: tmpHolePath, profile: hole.profile, color: p.color}, this);
+                holeFrame.nodeWindowFrame.position.z += hole.offset.z;
+                holeFrame.nodeWindowFrame.parent = frame.nodeWindowFrame;
+
+                holeFrame.frame.onBeforeRenderObservable.add(() => {
+                    this.clipPlane = new Plane(1, 0, 0, 0);
+                });
+            
+                holeFrame.frame.onAfterRenderObservable.add(() => {
+                    this.clipPlane = null;
+                });
+
+                polySlice.addHole(holesForSlice(vec3ToVec2(hole.profile), new Vector2(hole.offset.x - p.offset.x, hole.offset.z)));
+            })    
+
+
+            const sliceMesh = polySlice.build();
+            sliceMesh.material = frame.frame.material;
+            sliceMesh.rotation.z = -Math.PI * 0.5;
+            const sliceMeshSecond = sliceMesh.clone("sliceMeshSecond");
+
+            sliceMesh.position.y = heightHalf - p.offset.y;
+            sliceMesh.position.z += p.offset.z;
+            
+            sliceMeshSecond.scaling.x = -1;
+            sliceMeshSecond.position.y = -(heightHalf - p.offset.y);
+            sliceMeshSecond.position.z += p.offset.z;
+           
+            if (p.withGlass) {              
+                windowGlass(p.withGlass, this);
+            }
+        })        
               
         this.executeWhenReady(() => {  
             // this.camera.useAutoRotationBehavior = true;

@@ -12,13 +12,14 @@ const windowFrame = (options, scene) => {
 
   const {path, profile, color} = options;
   const frame = frameMaker("window", {path, profile}, scene);
+  frame.convertToFlatShadedMesh();
   frame.parent = nodeWindowFrame;
 
   const frameMaterial = new PBRMaterial("windowFrameMaterial", scene); 
-  frameMaterial.alpha = 0.75;
+  // frameMaterial.alpha = 0.75;
   frameMaterial.albedoColor = color;
   frameMaterial.metallic = 0;
-  frameMaterial.roughness = 1;
+  frameMaterial.roughness = 0.25;
   frame.material = frameMaterial;  
 
   // nodeWindowFrame.rotate(Axis.Y, Math.PI, Space.WORLD);
